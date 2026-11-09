@@ -8,8 +8,9 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Go](https://img.shields.io/badge/go-1.26%2B-00ADD8)
 
-veilox is a small self-hosted gateway that sits between your app and OpenAI or Anthropic. It swaps personal
-data for placeholders before the prompt leaves your server, puts the real values back into the answer
+veilox is a small self-hosted gateway that sits between your app and its AI provider: OpenAI, Anthropic, or any
+OpenAI-compatible API (OpenRouter, Groq, Together, DeepSeek, or local models with Ollama or vLLM). It swaps
+personal data for placeholders before the prompt leaves your server, puts the real values back into the answer
 (streams too), and records what each call cost, per app. Your app changes its base URL and key. Nothing else.
 
 ## Example: one request, step by step
@@ -223,7 +224,7 @@ storage:
 | `server.max_body_bytes` | `10485760` | Larger requests get `413` |
 | `server.upstream_timeout` | `10m` | The whole provider call, streams included |
 | `server.timezone` | `UTC` | When a budget day starts |
-| `providers.openai.base_url` | `https://api.openai.com` | Any OpenAI-compatible API works (OpenRouter, Groq, vLLM, Ollama…) |
+| `providers.openai.base_url` | `https://api.openai.com` | Any OpenAI-compatible API works, e.g. `https://openrouter.ai/api` (its key goes in `OPENAI_API_KEY`). One per veilox |
 | `apps[].daily_budget_usd` | none | Soft limit: a request that starts under budget may finish over it |
 | `masking.detectors` | all five | `email, phone, credit_card, iban, ipv4` |
 | `masking.ipv4.skip_private` | `false` | Leave 10.x, 192.168.x, … unmasked |
