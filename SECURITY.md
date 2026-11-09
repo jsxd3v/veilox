@@ -33,8 +33,9 @@ vulnerability: please open a normal issue with a made-up example. A way to make 
 
 ## How veilox protects itself
 
-- App keys are stored as SHA-256 hashes; lookups hash the presented key and compare it with every app in
-  constant time. Keys are never logged.
+- In `veilox.yaml`, app keys are stored as SHA-256 hashes. A key in `.env` (`VEILOX_KEY`) is plain text, so
+  `.env` must stay private: veilox warns when other users can read it. Lookups hash the presented key and
+  compare it with every app in constant time. Keys are never logged.
 - Provider keys are read from environment variables only.
 - Request bodies are limited (`server.max_body_bytes`, default 10 MiB), non-streaming provider responses
   to 32 MiB. Header, body-read, idle and per-request upstream timeouts are set; a closed client connection

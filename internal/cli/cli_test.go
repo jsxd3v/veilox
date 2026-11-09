@@ -362,7 +362,7 @@ func TestServeErrors(t *testing.T) {
 	}
 	defer ln.Close()
 	t.Setenv("VEILOX_LISTEN", ln.Addr().String())
-	if code, _, errs := run(t, "", "serve", "--config", filepath.Join(busy, "veilox.yaml")); code != 1 || !strings.Contains(errs, "address already in use") {
+	if code, _, errs := run(t, "", "serve", "--config", filepath.Join(busy, "veilox.yaml")); code != 1 || errs == "" { // the wording differs per OS
 		t.Fatal(errs)
 	}
 }

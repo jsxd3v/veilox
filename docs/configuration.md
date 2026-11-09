@@ -2,7 +2,8 @@
 
 ## The quick way: `.env` only
 
-For one app you don't need any YAML. `veilox setup` writes a `.env` like this:
+For one app you don't need any YAML. `veilox setup` writes a `.env` like this (or copy
+[`.env.example`](../.env.example) and run `veilox setup` to fill in the key):
 
 ```bash
 OPENAI_API_KEY=sk-...          # fill in the provider key you use

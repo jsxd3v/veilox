@@ -73,9 +73,15 @@ support-bot  gpt-6.1-terra         1       0         38          32  <$0.01     
 TOTAL                              1       0         38          32  <$0.01       4
 ```
 
-To try steps 3 and 4 without an API key, run the fake provider
-([`examples/fake-provider`](examples/fake-provider)), which answers like a model and prints everything it
-receives. The [quick start](#quick-start-under-a-minute) below sets up the rest.
+**No API key?** Try steps 3 and 4 with the fake provider ([`examples/fake-provider`](examples/fake-provider)),
+which answers like a model and prints everything it receives, so you can see what a provider would see:
+
+```bash
+go run ./examples/fake-provider &                                  # a fake OpenAI/Anthropic on :9999
+veilox setup                                                       # .env with your vx_ key
+printf 'providers:\n  openai: { base_url: http://127.0.0.1:9999 }\n' > veilox.yaml
+OPENAI_API_KEY=fake veilox serve
+```
 
 ## Quick start (under a minute)
 
@@ -94,7 +100,8 @@ receives. The [quick start](#quick-start-under-a-minute) below sets up the rest.
 veilox setup
 ```
 
-This creates two files in the current folder and prints your app's veilox key (`vx_...`):
+This creates two files in the current folder and prints your app's veilox key (`vx_...`). You can also
+copy [`.env.example`](.env.example) to `.env` and run `veilox setup` to fill in the key.
 
 - `.env`, with your new `VEILOX_KEY` and empty lines for the provider keys;
 - `prices.yaml`, with **example** prices: edit them to your provider's current prices.
@@ -229,8 +236,9 @@ storage:
 **Prices:** `prices.yaml` ships with **example values. Check your provider's current pricing** and edit the
 file. veilox doesn't fetch prices. Models missing from it are still proxied and marked `*` in reports.
 
-App keys are stored as SHA-256 hashes, so `veilox.yaml` can go in Git. Provider keys stay in veilox's
-environment. `SIGHUP` reloads the config and prices without a restart.
+In `veilox.yaml`, app keys are stored as SHA-256 hashes, so the file can go in Git. `VEILOX_KEY` in `.env`
+is plain text: keep `.env` private. Provider keys stay in veilox's environment. `SIGHUP` reloads the config
+and prices without a restart.
 
 Full reference: [docs/configuration.md](docs/configuration.md).
 
@@ -243,7 +251,8 @@ Full reference: [docs/configuration.md](docs/configuration.md).
 | `veilox report` | Spend by day, app, model or provider. `--since 7d`, `--app`, `--by`, `--format table\|csv\|json` |
 | `veilox scan <file\|->` | Dry run: what would be masked. `--request` reads an API request body, `--json` for scripts |
 | `veilox keygen <app>` | New app key and the hash for the config |
-| `veilox check` | Validate `veilox.yaml` and `prices.yaml`, warn about missing provider keys |
+| `veilox check` | Validate `.env`, `veilox.yaml` and `prices.yaml`, warn about missing provider keys |
+| `veilox version` | Version, commit and build date |
 
 ## Docker
 
@@ -289,8 +298,8 @@ veilox reduces what leaves your server. It doesn't replace a data processing agr
   result.
 - Integration tests run the gateway against a fake OpenAI and Anthropic (JSON, SSE, tool calls, errors,
   budgets, disconnects) and **fail if a known value reaches the provider, the logs or the database file**.
-- CI: golangci-lint (incl. gosec), `go test -race` on Linux, macOS and Windows, coverage gate at 80% (about
-  95% today), govulncheck, cross-compiles and a Docker smoke test. No real API calls.
+- CI: golangci-lint (incl. gosec), `go test -race` on Linux and macOS, tests on Windows, a coverage gate at
+  80% (about 95% today), govulncheck, cross-compiles and a Docker smoke test. No real API calls.
 
 ## Roadmap
 

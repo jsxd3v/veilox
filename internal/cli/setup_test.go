@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -44,7 +45,7 @@ func TestSetupNewFolder(t *testing.T) {
 	if !strings.Contains(out, `for the app "default"`) || !strings.Contains(out, "http://localhost:8080/v1") {
 		t.Fatal(out)
 	}
-	if info, _ := os.Stat(filepath.Join(dir, ".env")); info.Mode().Perm() != 0o600 {
+	if info, _ := os.Stat(filepath.Join(dir, ".env")); runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Fatalf(".env mode %v", info.Mode().Perm())
 	}
 	if b, _ := os.ReadFile(filepath.Join(dir, "prices.yaml")); string(b) != examplePrices {
@@ -76,6 +77,25 @@ func TestSetupExistingEnv(t *testing.T) {
 	}
 	if code, _, _ := run(t, "", "setup", "a", "b"); code != 2 {
 		t.Fatal(code)
+	}
+}
+
+// A copied .env.example has empty VEILOX_KEY= and VEILOX_APP= lines: setup fills them in place.
+func TestSetupFillsCopiedExample(t *testing.T) {
+	dir := t.TempDir()
+	example, err := os.ReadFile("../../.env.example")
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, dir, ".env", string(example))
+	if code, out, _ := run(t, "", "setup", "llmvero", "--dir", dir); code != 0 || !strings.Contains(out, "Updated") {
+		t.Fatal(out)
+	}
+	env, _ := os.ReadFile(filepath.Join(dir, ".env"))
+	if strings.Count(string(env), "VEILOX_KEY=") != 1 || keyRe.FindString(string(env)) == "" ||
+		strings.Count(string(env), "VEILOX_APP=") != 1 || !strings.Contains(string(env), "VEILOX_APP=llmvero\n") ||
+		!strings.Contains(string(env), "# VEILOX_LISTEN=:8080") {
+		t.Fatalf("%s", env)
 	}
 }
 
@@ -114,7 +134,7 @@ func TestLoadDotEnvRealEnvWins(t *testing.T) {
 	if os.Getenv("VEILOX_TEST_A") != "from-env" || os.Getenv("VEILOX_TEST_B") != "from-file" {
 		t.Fatal(os.Getenv("VEILOX_TEST_A"), os.Getenv("VEILOX_TEST_B"))
 	}
-	if !strings.Contains(warning, "chmod 600") {
+	if runtime.GOOS != "windows" && !strings.Contains(warning, "chmod 600") { // no Unix permissions on Windows
 		t.Fatal(warning)
 	}
 }

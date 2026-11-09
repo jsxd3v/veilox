@@ -18,13 +18,14 @@ First release.
 - Restoring real values in answers, tool-call arguments (JSON-escaped, also when brackets arrive as
   `<…>`) and provider error messages. In streams, placeholders split across chunks are held
   back until complete.
-- Per-app keys (only SHA-256 hashes in the config, constant-time lookup); provider keys stay in veilox's
+- Per-app keys (SHA-256 hashes in `veilox.yaml`, constant-time lookup); provider keys stay in veilox's
   environment.
 - Cost tracking in SQLite (pure Go, no CGO) from an editable `prices.yaml` with prefix matching and cache
   token prices. Daily budgets per app with a `429`, `Retry-After` and an error in the SDK's format.
 - `masking.unsupported_content` (forward or reject images and files), `masking.system_hint`,
   `pricing.unknown_model`.
-- `veilox setup [app]`: creates `.env` with a new app key (`VEILOX_KEY`) and an example `prices.yaml`.
+- `veilox setup [app]`: creates `.env` with a new app key (`VEILOX_KEY`) and an example `prices.yaml`
+  (or fills in a copied `.env.example`).
   veilox reads `.env` itself, and `veilox.yaml` is optional, so one app needs no YAML at all.
 - Commands: `serve` (graceful shutdown, reload on `SIGHUP`, daily retention cleanup), `report` (table, CSV,
   JSON), `scan` (dry run on text or a request body), `keygen`, `check`, `version`.

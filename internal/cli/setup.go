@@ -91,19 +91,35 @@ func runSetup(args []string, stdout, stderr io.Writer) error {
 			add.WriteString("\n# Your provider key: fill in the one you use\nOPENAI_API_KEY=\nANTHROPIC_API_KEY=\n")
 		}
 	}
+	// Values for empty lines that are already there (e.g. a copied .env.example) are filled in place.
+	fill := map[string]string{}
 	key := have["VEILOX_KEY"]
 	newKey := key == ""
 	if newKey {
 		if key, err = auth.NewKey(); err != nil {
 			return err
 		}
-		if envExisted {
-			add.WriteString("\n# The key your apps use to call veilox (created by `veilox setup`)\n")
+		if _, listed := have["VEILOX_KEY"]; listed {
+			fill["VEILOX_KEY"] = key
+		} else {
+			if envExisted {
+				add.WriteString("\n# The key your apps use to call veilox (created by `veilox setup`)\n")
+			}
+			add.WriteString("VEILOX_KEY=" + key + "\n")
 		}
-		add.WriteString("VEILOX_KEY=" + key + "\n")
 	}
 	if len(pos) == 1 && have["VEILOX_APP"] == "" {
-		add.WriteString("VEILOX_APP=" + pos[0] + "\n")
+		if _, listed := have["VEILOX_APP"]; listed {
+			fill["VEILOX_APP"] = pos[0]
+		} else {
+			add.WriteString("VEILOX_APP=" + pos[0] + "\n")
+		}
+	}
+	changed := add.Len() > 0 || len(fill) > 0 // before fillEmpty, which empties fill
+	if len(fill) > 0 {
+		if err := fillEmpty(envPath, fill); err != nil {
+			return err
+		}
 	}
 	if add.Len() > 0 {
 		if err := appendFile(envPath, add.String()); err != nil {
@@ -123,7 +139,7 @@ func runSetup(args []string, stdout, stderr io.Writer) error {
 	switch {
 	case !envExisted:
 		fmt.Fprintf(stdout, "Created %s\n", envPath)
-	case add.Len() > 0:
+	case changed:
 		fmt.Fprintf(stdout, "Updated %s\n", envPath)
 	default:
 		fmt.Fprintf(stdout, "%s is already set up\n", envPath)
@@ -156,6 +172,23 @@ Next:
                   http://localhost:8080      (Anthropic)
 `, label, app, key, key)
 	return nil
+}
+
+// fillEmpty sets the first empty "KEY=" line of each key to its value, keeping everything else.
+func fillEmpty(path string, values map[string]string) error {
+	data, err := os.ReadFile(path) // #nosec G304 -- .env in the chosen folder
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(data), "\n")
+	for i, l := range lines {
+		k, v, ok := strings.Cut(strings.TrimSpace(l), "=")
+		if want, has := values[strings.TrimSpace(k)]; ok && has && strings.TrimSpace(v) == "" {
+			lines[i] = strings.TrimSpace(k) + "=" + want
+			delete(values, strings.TrimSpace(k))
+		}
+	}
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o600) // #nosec G703 -- .env in the folder the operator chose
 }
 
 func appendFile(path, text string) error {
