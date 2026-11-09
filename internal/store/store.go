@@ -65,7 +65,7 @@ func Open(path string) (*Store, error) {
 			return nil, err
 		}
 	}
-	dsn := "file:" + (&url.URL{Path: path}).EscapedPath() +
+	dsn := "file:" + uriPath(path) +
 		"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
@@ -77,6 +77,16 @@ func Open(path string) (*Store, error) {
 		return nil, fmt.Errorf("database %s: %w", path, err)
 	}
 	return &Store{db: db, errFn: func(error) {}}, nil
+}
+
+// uriPath turns a file path into the path part of a SQLite file: URI. Windows paths use forward
+// slashes and a leading slash before the drive letter (file:/C:/data/veilox.db).
+func uriPath(path string) string {
+	p := filepath.ToSlash(path)
+	if filepath.VolumeName(path) != "" {
+		p = "/" + p
+	}
+	return (&url.URL{Path: p}).EscapedPath()
 }
 
 func migrate(ctx context.Context, db *sql.DB) error {

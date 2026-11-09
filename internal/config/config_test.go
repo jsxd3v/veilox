@@ -40,7 +40,7 @@ func TestDefaults(t *testing.T) {
 	if cfg.Location != time.UTC || cfg.Masking.UnsupportedContent != "forward" || cfg.Pricing.UnknownModel != "allow" {
 		t.Fatal("defaults")
 	}
-	if cfg.Resolve("prices.yaml") != filepath.Join(cfg.Dir, "prices.yaml") || cfg.Resolve("/abs") != "/abs" || cfg.Resolve("") != "" {
+	if cfg.Resolve("prices.yaml") != filepath.Join(cfg.Dir, "prices.yaml") || cfg.Resolve(cfg.Dir) != cfg.Dir || cfg.Resolve("") != "" {
 		t.Fatal("resolve")
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -170,5 +171,15 @@ func TestInsertErrorReported(t *testing.T) {
 	s.Add(Record{})
 	if got == nil || errors.Is(got, nil) {
 		t.Fatal("expected an error from a closed database")
+	}
+}
+
+func TestURIPath(t *testing.T) {
+	if got := uriPath(filepath.Join("data", "my db#1.db")); got != "data/my%20db%231.db" {
+		t.Fatal(got)
+	}
+	abs, _ := filepath.Abs("x.db")
+	if got := uriPath(abs); !strings.HasPrefix(got, "/") || strings.Contains(got, `\`) {
+		t.Fatal(got)
 	}
 }
