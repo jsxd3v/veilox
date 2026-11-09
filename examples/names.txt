@@ -1,0 +1,3 @@
+# Names veilox should mask, one per line (e.g. an export from your CRM).
+Maria Santos
+John O'Neill

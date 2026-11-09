@@ -1,0 +1,46 @@
+# GoReleaser: binaries, archives and checksums for GitHub Releases.
+# The Docker image is built by .github/workflows/release.yml.
+version: 2
+project_name: veilox
+
+builds:
+  - id: veilox
+    main: ./cmd/veilox
+    binary: veilox
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }} -X main.commit={{ .ShortCommit }} -X main.date={{ .CommitDate }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - NOTICE
+      - THIRD_PARTY_NOTICES.md
+      - README.md
+      - CHANGELOG.md
+      - examples/veilox.yaml
+      - examples/prices.yaml
+      - examples/names.txt
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  disable: true # release notes come from CHANGELOG.md
+
+release:
+  github:
+    owner: jsxd3v
+    name: veilox

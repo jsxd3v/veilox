@@ -1,0 +1,24 @@
+# Run veilox next to your app. Put veilox.yaml, prices.yaml and names.txt in ./veilox
+# and the provider keys in .env (OPENAI_API_KEY=..., ANTHROPIC_API_KEY=...).
+services:
+  veilox:
+    image: ghcr.io/jsxd3v/veilox:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      VEILOX_DB: /data/veilox.db
+    volumes:
+      - ./veilox:/etc/veilox:ro
+      - veilox-data:/data
+    # Keep it private: only your app talks to veilox.
+    expose:
+      - "8080"
+    read_only: true
+
+  # your-app:
+  #   environment:
+  #     OPENAI_BASE_URL: http://veilox:8080/v1
+  #     OPENAI_API_KEY: vx_...          # the app's veilox key
+
+volumes:
+  veilox-data:

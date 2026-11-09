@@ -1,0 +1,27 @@
+name: Bug report
+description: Something doesn't work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please don't paste real personal data, prompts or keys. For security issues, use
+        [private reporting](https://github.com/jsxd3v/veilox/security/advisories/new) instead.
+  - type: input
+    id: version
+    attributes:
+      label: veilox version
+      description: Output of `veilox version`
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: For detection issues, a made-up example text and `veilox scan` output help most.

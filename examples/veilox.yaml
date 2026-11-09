@@ -1,0 +1,34 @@
+# veilox.yaml: example configuration. Full reference: docs/configuration.md
+# Relative paths are resolved from the folder of this file.
+
+server:
+  listen: ":8080"
+  timezone: UTC                 # when a budget day starts
+
+providers:
+  openai:
+    base_url: https://api.openai.com      # any OpenAI-compatible API works
+    api_key_env: OPENAI_API_KEY
+  anthropic:
+    base_url: https://api.anthropic.com
+    api_key_env: ANTHROPIC_API_KEY
+
+apps:
+  # Create a key with: veilox keygen support-bot
+  - name: support-bot
+    key_sha256: 0000000000000000000000000000000000000000000000000000000000000000
+    daily_budget_usd: 5
+
+masking:
+  names_file: names.txt         # names to mask, one per line
+  rules:
+    - name: CUSTOMER_ID
+      pattern: 'CUS-[0-9]{6}'
+  unsupported_content: forward  # or reject: refuse images and files, which can't be masked
+
+storage:
+  path: ./data/veilox.db
+  retention_days: 90
+
+pricing:
+  file: ./prices.yaml

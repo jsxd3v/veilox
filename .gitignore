@@ -1,0 +1,9 @@
+.DS_Store
+/dist/
+/data/
+*.db
+*.db-shm
+*.db-wal
+coverage.out
+/veilox
+.env

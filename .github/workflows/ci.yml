@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
+          golangci-lint run ./...
+      - name: go mod tidy
+        run: go mod tidy -diff
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - name: Third-party notices are up to date
+        run: ./scripts/third-party-notices.sh && git diff --exit-code THIRD_PARTY_NOTICES.md
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        go: ["1.26", stable]
+        include:
+          - os: macos-latest
+            go: stable
+          - os: windows-latest
+            go: stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Tests (race detector, no real API calls)
+        if: runner.os != 'Windows'
+        run: go test -race -timeout 5m -coverpkg=./internal/... -coverprofile=coverage.out ./...
+      - name: Tests
+        if: runner.os == 'Windows'
+        run: go test -timeout 5m ./...
+      - name: Coverage at least 80%
+        if: runner.os == 'Linux' && matrix.go == 'stable'
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {sub("%", "", $3); print $3}')
+          echo "coverage: ${total}%"
+          awk -v t="$total" 'BEGIN { exit (t < 80) }'
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux' && matrix.go == 'stable'
+        with:
+          name: coverage
+          path: coverage.out
+      - name: Detectors stay fast on worst-case input (no -race)
+        if: runner.os == 'Linux'
+        run: go test -run WorstCase -v ./internal/detect
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Cross-compile every release target
+        run: |
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            echo "== $target"
+            CGO_ENABLED=0 GOOS=${target%/*} GOARCH=${target#*/} go build -trimpath -o /dev/null ./cmd/veilox
+          done
+      - name: GoReleaser config
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: check
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: veilox:ci
+      - name: Smoke test
+        run: |
+          docker run --rm veilox:ci version
+          docker run --rm -i veilox:ci scan - < examples/sample-ticket.txt | grep -q '<CREDIT_CARD_1>'
