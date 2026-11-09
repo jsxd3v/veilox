@@ -60,7 +60,7 @@ jobs:
           total=$(go tool cover -func=coverage.out | awk '/^total:/ {sub("%", "", $3); print $3}')
           echo "coverage: ${total}%"
           awk -v t="$total" 'BEGIN { exit (t < 80) }'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: runner.os == 'Linux' && matrix.go == 'stable'
         with:
           name: coverage
