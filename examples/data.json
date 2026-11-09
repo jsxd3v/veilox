@@ -1,0 +1,13 @@
+{
+  "model": "gpt-6.1-terra",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a polite support agent. Write a short reply."
+    },
+    {
+      "role": "user",
+      "content": "Hi, I am Maria Santos (maria.santos@example.com, +351 912 345 678). My card 4111 1111 1111 1111 was charged twice. Please help."
+    }
+  ]
+}

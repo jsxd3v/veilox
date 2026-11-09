@@ -1,4 +1,4 @@
-// Package fakeprovider is a stand-in for the OpenAI and Anthropic APIs, used by tests and the demo.
+// Package fakeprovider is a stand-in for the OpenAI and Anthropic APIs, used by tests and local trials.
 // It records every request body it receives and answers using the placeholders it was sent.
 package fakeprovider
 

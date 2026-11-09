@@ -12,41 +12,70 @@ veilox is a small self-hosted gateway that sits between your app and OpenAI or A
 data for placeholders before the prompt leaves your server, puts the real values back into the answer
 (streams too), and records what each call cost, per app. Your app changes its base URL and key. Nothing else.
 
-![veilox demo: scan a ticket, send it through the gateway, see what the provider received, report the week's spend](docs/demo.gif)
+## Example: one request, step by step
 
-## Before and after
+**1. Your app's request.** This is [`examples/data.json`](examples/data.json), a normal OpenAI Chat Completions
+body:
 
-Your app sends this:
-
-```text
-Customer Maria Santos (maria.santos@example.com, +351 912 345 678) says card
-4111 1111 1111 1111 was charged twice. Draft a polite reply.
+```json
+{
+  "model": "gpt-6.1-terra",
+  "messages": [
+    { "role": "system", "content": "You are a polite support agent. Write a short reply." },
+    { "role": "user", "content": "Hi, I am Maria Santos (maria.santos@example.com, +351 912 345 678). My card 4111 1111 1111 1111 was charged twice. Please help." }
+  ]
+}
 ```
 
-The provider receives this:
+**2. Check what veilox would hide** (a dry run: nothing is sent anywhere):
 
 ```text
-Customer <NAME_1> (<EMAIL_1>, <PHONE_1>) says card
-<CREDIT_CARD_1> was charged twice. Draft a polite reply.
+$ veilox scan --request examples/data.json --config examples/veilox.yaml
+...
+4 values would be masked (dry run: nothing was sent anywhere):
+
+TYPE         PLACEHOLDER      VALUE
+NAME         <NAME_1>         Maria Santos
+EMAIL        <EMAIL_1>        maria.santos@example.com
+PHONE        <PHONE_1>        +351 912 345 678
+CREDIT_CARD  <CREDIT_CARD_1>  4111 1111 1111 1111
 ```
 
-The model answers `Hi <NAME_1>, sorry about the double charge on card <CREDIT_CARD_1>…` and your app gets:
+**3. Send it through veilox.** Same request, sent to veilox instead of OpenAI, with the app's veilox key:
+
+```bash
+curl -s localhost:8080/v1/chat/completions -H "Authorization: Bearer vx_..." -d @examples/data.json
+```
+
+The provider receives only placeholders:
 
 ```text
-Hi Maria Santos, sorry about the double charge on card 4111 1111 1111 1111…
+Hi, I am <NAME_1> (<EMAIL_1>, <PHONE_1>). My card <CREDIT_CARD_1> was charged twice. Please help.
 ```
 
-The mapping exists only in memory, for that one request. It's never written to disk or to the logs.
+The model answers with placeholders too, and veilox puts the real values back before your app sees the
+answer:
 
-And at the end of the week:
+```json
+"content": "Hi Maria Santos, sorry about the double charge on card 4111 1111 1111 1111. The refund is on its way and we'll confirm it at maria.santos@example.com."
+```
+
+The link between `<NAME_1>` and `Maria Santos` exists only in memory, for this one request. It's never
+written to disk or to the logs.
+
+**4. See what it cost.** Each request is recorded with its tokens, cost and how many values were hidden
+(counts only, never the values):
 
 ```text
-$ veilox report --since 7d --by app,model
-APP            MODEL              REQUESTS  ERRORS  INPUT TOK  OUTPUT TOK   COST  MASKED
-support-bot    claude-sonnet-5-5     2,428      23  1,875,908     565,514  $4.70   6,060
-crm-summaries  gpt-6.1-terra           525       1    741,748     187,950  $1.49   1,575
-TOTAL                                2,953      24  2,617,656     753,464  $6.20   7,635
+$ veilox report --by app,model
+APP          MODEL          REQUESTS  ERRORS  INPUT TOK  OUTPUT TOK    COST  MASKED
+support-bot  gpt-6.1-terra         1       0         38          32  <$0.01       4
+TOTAL                              1       0         38          32  <$0.01       4
 ```
+
+To try steps 3 and 4 without an API key, run the fake provider
+([`examples/fake-provider`](examples/fake-provider)), which answers like a model and prints everything it
+receives. The [quick start](#quick-start-under-a-minute) below sets up the rest.
 
 ## Quick start (under a minute)
 
@@ -90,10 +119,7 @@ client = Anthropic(base_url="http://localhost:8080", api_key="vx_...")
 The same works from Node, Go, PHP or anything that lets you set a base URL. Streaming works as before.
 
 Want to see what would be masked before you route traffic? `veilox scan ticket.txt` is a dry run on any
-file, and `veilox scan --request body.json` shows a request exactly as the provider would receive it.
-
-No API key yet? [`examples/fake-provider`](examples/fake-provider) pretends to be both providers and prints
-everything it receives.
+file, and `veilox scan --request data.json` shows a request exactly as the provider would receive it.
 
 ## How it works
 

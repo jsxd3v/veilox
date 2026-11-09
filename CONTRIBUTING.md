@@ -47,7 +47,7 @@ internal/budget/     today's spend per app
 internal/store/      SQLite: request rows, reports
 internal/auth/       app keys
 internal/cli/        commands
-internal/fakeprovider/  fake OpenAI/Anthropic for tests and demos
+internal/fakeprovider/  fake OpenAI/Anthropic for tests and local trials
 ```
 
 ## Adding a detector

@@ -463,9 +463,9 @@ veilox/
 │   ├── budget/            today's spend per app (in memory, loaded from SQLite)
 │   ├── store/             SQLite, migrations, report queries
 │   ├── cli/               serve, report, scan, keygen, check
-│   └── fakeprovider/      fake OpenAI + Anthropic for tests and the demo
-├── docs/                  configuration.md, detectors.md, streaming.md, demo.gif (+ demo.tape, demo/)
-├── examples/              veilox.yaml, prices.yaml, names.txt, docker-compose.yml, fake-provider/, samples
+│   └── fakeprovider/      fake OpenAI + Anthropic for tests and local trials
+├── docs/                  configuration.md, detectors.md, streaming.md
+├── examples/              veilox.yaml, prices.yaml, names.txt, data.json, docker-compose.yml, fake-provider/, sample-ticket.txt
 ├── scripts/               third-party-notices.sh
 ├── .github/               workflows (ci, release), issue/PR templates, dependabot
 ├── .goreleaser.yaml, Dockerfile, .golangci.yml
@@ -485,9 +485,9 @@ with `CGO_ENABLED=0`, SHA-256 checksums, and a GitHub Release whose notes come f
 `CHANGELOG.md`. A second job builds the multi-arch (amd64, arm64) distroless image from the `Dockerfile` and
 pushes `ghcr.io/jsxd3v/veilox:{version, major.minor, latest}`.
 
-**Demo:** VHS tape (`docs/demo.tape`, setup in `docs/demo/setup.sh`) → `docs/demo.gif`: `veilox scan` on a
-sample ticket, a `curl` through the gateway to the local fake provider showing the restored answer and what
-the provider received, then `veilox report` over a week of made-up traffic.
+**Example:** `examples/data.json` is one OpenAI request with personal data. The README walks through it:
+`veilox scan --request`, sending it through the gateway, what the provider receives, what the app gets back,
+and `veilox report`.
 
 ## 13. Roadmap (after 0.1)
 

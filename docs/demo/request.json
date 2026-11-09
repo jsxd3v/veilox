@@ -1,8 +1,0 @@
-{
-  "model": "claude-sonnet-5-5",
-  "max_tokens": 300,
-  "system": "You are a polite support agent. Draft a short reply.",
-  "messages": [
-    {"role": "user", "content": "From: Maria Santos <maria.santos@example.com>. My card 4111 1111 1111 1111 was charged twice. Please help."}
-  ]
-}
