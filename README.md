@@ -86,37 +86,48 @@ receives. The [quick start](#quick-start-under-a-minute) below sets up the rest.
 | macOS / Linux | Download from [Releases](https://github.com/jsxd3v/veilox/releases), or `go install github.com/jsxd3v/veilox/cmd/veilox@latest` (Go 1.26+) |
 | Windows | `veilox_<version>_windows_amd64.zip` from [Releases](https://github.com/jsxd3v/veilox/releases) |
 | Docker | `ghcr.io/jsxd3v/veilox` (see [Docker](#docker) below) |
+| From this repo | `go build -o veilox ./cmd/veilox`, then use `./veilox` |
 
-**2. Create a key for your app and get the example config.**
+**2. Set it up.**
 
 ```bash
-veilox keygen support-bot          # prints the app's key and the hash for veilox.yaml
-curl -fsSLO https://raw.githubusercontent.com/jsxd3v/veilox/main/examples/veilox.yaml
-curl -fsSLO https://raw.githubusercontent.com/jsxd3v/veilox/main/examples/prices.yaml
-curl -fsSLO https://raw.githubusercontent.com/jsxd3v/veilox/main/examples/names.txt
+veilox setup
 ```
 
-Paste the `key_sha256` line into `veilox.yaml`, and edit `prices.yaml` (the shipped numbers are examples).
+This creates two files in the current folder and prints your app's veilox key (`vx_...`):
+
+- `.env`, with your new `VEILOX_KEY` and empty lines for the provider keys;
+- `prices.yaml`, with **example** prices: edit them to your provider's current prices.
+
+Open `.env` and fill in the provider key you use:
+
+```bash
+OPENAI_API_KEY=sk-...
+```
 
 **3. Run it.**
 
 ```bash
-export OPENAI_API_KEY=sk-...        # and/or ANTHROPIC_API_KEY
-veilox check                        # validates the config and tells you what's missing
 veilox serve
 ```
 
-**4. Point your app at it.**
+**4. Point your app at it.** Use the `vx_...` key from step 2 as the API key, and veilox as the base URL:
+
+| Your app uses | Base URL |
+|---|---|
+| OpenAI | `http://localhost:8080/v1` |
+| Anthropic | `http://localhost:8080` |
 
 ```python
-# OpenAI SDK
 client = OpenAI(base_url="http://localhost:8080/v1", api_key="vx_...")
-
-# Anthropic SDK
 client = Anthropic(base_url="http://localhost:8080", api_key="vx_...")
 ```
 
-The same works from Node, Go, PHP or anything that lets you set a base URL. Streaming works as before.
+The same works from Node, Go, PHP or anything that lets you set a base URL, often with just two lines in
+its own `.env`. Streaming works as before.
+
+Several apps, budgets, names to mask or your own rules? Add a `veilox.yaml` next to `.env`
+(see [Configuration](#configuration)).
 
 Want to see what would be masked before you route traffic? `veilox scan ticket.txt` is a dry run on any
 file, and `veilox scan --request data.json` shows a request exactly as the provider would receive it.
@@ -165,7 +176,18 @@ are resolved: [docs/detectors.md](docs/detectors.md).
 
 ## Configuration
 
-`veilox.yaml`, the parts you'll touch:
+For one app, `.env` is all you need (`veilox setup` writes it):
+
+| Variable | |
+|---|---|
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Your provider keys. They stay in veilox; apps never see them |
+| `VEILOX_KEY` | The key your app uses to call veilox |
+| `VEILOX_APP` | The app's name in reports (default `default`) |
+| `VEILOX_LISTEN`, `VEILOX_DB` | Address (default `:8080`) and database file (default `./data/veilox.db`) |
+
+veilox reads `.env` from the folder you start it in. Variables already set in the environment win.
+
+For several apps, budgets, names or custom rules, add `veilox.yaml`. The parts you'll touch:
 
 ```yaml
 providers:
@@ -216,6 +238,7 @@ Full reference: [docs/configuration.md](docs/configuration.md).
 
 | Command | |
 |---|---|
+| `veilox setup [app]` | Create `.env` with a new app key, and an example `prices.yaml` |
 | `veilox serve` | Run the gateway. `SIGHUP` reloads, `SIGTERM` waits for open requests |
 | `veilox report` | Spend by day, app, model or provider. `--since 7d`, `--app`, `--by`, `--format table\|csv\|json` |
 | `veilox scan <file\|->` | Dry run: what would be masked. `--request` reads an API request body, `--json` for scripts |
@@ -231,7 +254,10 @@ docker run -d -p 8080:8080 \
   ghcr.io/jsxd3v/veilox
 ```
 
-The image reads `/etc/veilox/veilox.yaml` and keeps its database in `/data`. It is distroless, runs as a
+Or with no config folder at all: `docker run -d -p 8080:8080 -v veilox-data:/data --env-file .env
+ghcr.io/jsxd3v/veilox`, using the `.env` from `veilox setup`.
+
+The image reads `/etc/veilox/veilox.yaml` if it's there and keeps its database in `/data`. It is distroless, runs as a
 non-root user and works with a read-only root filesystem. A Compose example sits in
 [`examples/docker-compose.yml`](examples/docker-compose.yml).
 

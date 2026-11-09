@@ -266,6 +266,14 @@ Documented plainly in the README:
 
 ## 6. Configuration
 
+### 6.0 The quick way: `.env` only
+
+One app needs no YAML: `veilox setup` writes `.env` with `OPENAI_API_KEY=`, `ANTHROPIC_API_KEY=` and a new
+`VEILOX_KEY=vx_...`. veilox reads `.env` from the current folder (real environment variables win).
+`VEILOX_KEY` becomes an app named `VEILOX_APP` (default `default`). `veilox.yaml` is optional: without
+`--config`, a missing file means the defaults. Trade-off: in `.env` the app key is plain text; in
+`veilox.yaml` only its hash is stored.
+
 ### 6.1 `veilox.yaml`
 
 ```yaml
@@ -397,6 +405,7 @@ echo the prompt). Only the provider's error `type` is logged.
 
 | Command | What it does |
 |---|---|
+| `veilox setup [app-name] [--dir folder]` | Writes `.env` with a new `VEILOX_KEY` (keeps an existing one), provider key lines, and an example `prices.yaml`. Prints the key and the base URLs to use |
 | `veilox serve [--config veilox.yaml]` | Starts the gateway. Graceful shutdown on SIGINT/SIGTERM (waits for in-flight streams up to 30 s); reload on SIGHUP |
 | `veilox report [--since 7d] [--until DATE] [--app NAME] [--by app,model,day] [--format table\|csv\|json]` | Spend table from SQLite, with totals |
 | `veilox scan <file\|-> [--request] [--json]` | Dry run: prints the masked text and a findings table (line:col, type, placeholder, value). `--request` treats the file as an OpenAI/Anthropic request body and masks exactly the fields the proxy would. Never calls a provider, never writes to the DB |

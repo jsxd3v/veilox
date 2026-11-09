@@ -1,9 +1,39 @@
 # Configuration
 
-veilox reads one YAML file, `veilox.yaml`, plus a price table, `prices.yaml`. Validate both with
+## The quick way: `.env` only
+
+For one app you don't need any YAML. `veilox setup` writes a `.env` like this:
+
+```bash
+OPENAI_API_KEY=sk-...          # fill in the provider key you use
+ANTHROPIC_API_KEY=
+VEILOX_KEY=vx_...              # the key your app uses to call veilox
+```
+
+| Variable | Default | |
+|---|---|---|
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | none | Provider keys (names can be changed with `providers.*.api_key_env`) |
+| `VEILOX_KEY` | none | One app key. At least 20 characters; `veilox setup` makes a random 43-character one |
+| `VEILOX_APP` | `default` | That app's name in logs and reports (`veilox setup llmvero` sets it) |
+| `VEILOX_LISTEN` | `:8080` | Address to listen on |
+| `VEILOX_DB` | `./data/veilox.db` | Database file |
+| `VEILOX_CONFIG` | `./veilox.yaml` | Path of the optional YAML config |
+
+veilox reads `.env` from the current folder (and from the folder of `veilox.yaml`, if that's elsewhere).
+Lines are `KEY=value`; `#` comments, `export` and quotes are allowed. Variables already set in the
+environment win over `.env`. veilox warns if other users can read the file (`chmod 600 .env`).
+
+`VEILOX_KEY` is stored as plain text in `.env`, so keep that file out of Git. With `veilox.yaml`, keys are
+stored as SHA-256 hashes instead.
+
+## veilox.yaml
+
+For several apps, budgets, names, custom rules or another provider URL, add `veilox.yaml` next to `.env`.
+Both work together: apps from `veilox.yaml` and the one from `VEILOX_KEY`. Validate everything with
 `veilox check`.
 
-- The config path is `--config`, or `VEILOX_CONFIG`, or `./veilox.yaml`.
+- The config path is `--config`, or `VEILOX_CONFIG`, or `./veilox.yaml`. Without `--config`, a missing
+  file is fine: veilox runs on the defaults below.
 - Relative paths inside the config (`names_file`, `storage.path`, `pricing.file`) are resolved from the
   folder that holds `veilox.yaml`, not from where you start veilox.
 - Unknown keys are an error, so a typo can't silently turn masking off.

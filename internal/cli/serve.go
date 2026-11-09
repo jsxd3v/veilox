@@ -42,14 +42,21 @@ func runServe(args []string, _, stderr io.Writer) error {
 	if _, err := parse(fs, args); err != nil {
 		return err
 	}
-	cfg, err := config.Load(*cfgPath)
+	cfg, warnings, err := loadConfig(fs, *cfgPath)
 	if err != nil {
 		return err
 	}
 	if len(cfg.Apps) == 0 {
-		return fmt.Errorf("%s has no apps; create a key with `veilox keygen <app-name>`", *cfgPath)
+		return errors.New("no app key: run `veilox setup` (or add apps to veilox.yaml)")
 	}
 	log := newLogger(cfg, stderr)
+	for _, w := range warnings {
+		log.Warn(w)
+	}
+	load := func() (*config.Config, error) {
+		c, _, err := loadConfig(fs, *cfgPath)
+		return c, err
+	}
 	rt, err := proxy.NewRuntime(cfg)
 	if err != nil {
 		return err
@@ -102,7 +109,7 @@ func runServe(args []string, _, stderr io.Writer) error {
 			return err
 		case sig := <-sigs:
 			if sig == syscall.SIGHUP {
-				reload(*cfgPath, cfg, srv, log)
+				reload(load, cfg, srv, log)
 				continue
 			}
 			log.Info("shutting down; waiting for open requests", "grace", shutdownGrace.String())
@@ -120,8 +127,8 @@ func runServe(args []string, _, stderr io.Writer) error {
 }
 
 // reload re-reads veilox.yaml and prices.yaml. A broken file keeps the running config.
-func reload(path string, running *config.Config, srv *proxy.Server, log *slog.Logger) {
-	cfg, err := config.Load(path)
+func reload(load func() (*config.Config, error), running *config.Config, srv *proxy.Server, log *slog.Logger) {
+	cfg, err := load()
 	if err == nil && len(cfg.Apps) == 0 {
 		err = errors.New("no apps")
 	}
@@ -142,7 +149,11 @@ func reload(path string, running *config.Config, srv *proxy.Server, log *slog.Lo
 }
 
 func logStartup(log *slog.Logger, cfg *config.Config, rt *proxy.Runtime, addr string) {
-	log.Info("veilox listening", "addr", addr, "version", Version, "apps", len(cfg.Apps),
+	source := cfg.File
+	if source == "" {
+		source = "none (defaults and .env)"
+	}
+	log.Info("veilox listening", "addr", addr, "version", Version, "config", source, "apps", len(cfg.Apps),
 		"detectors", rt.Engine.Types(), "names", len(cfg.Names), "priced_models", rt.Prices.Len())
 	if rt.Prices.Len() == 0 {
 		log.Warn("no prices loaded; costs will show as unknown", "pricing_file", cfg.Pricing.File)

@@ -22,6 +22,7 @@ var (
 const usage = `veilox: keep customer data out of AI providers and know what every AI call costs.
 
 Usage:
+  veilox setup   [app-name]                        create .env with a new app key (the quickest start)
   veilox serve   [--config veilox.yaml]            run the gateway
   veilox report  [--since 7d] [--app NAME] [--by day,app,model] [--format table|csv|json]
   veilox scan    <file|->  [--request] [--json]    dry run: show what would be masked
@@ -29,7 +30,8 @@ Usage:
   veilox check   [--config veilox.yaml]             validate the config and price table
   veilox version
 
-The config path can also be set with VEILOX_CONFIG. Docs: https://github.com/jsxd3v/veilox
+veilox reads .env from the current folder. veilox.yaml is optional (the path can also be set with
+VEILOX_CONFIG). Docs: https://github.com/jsxd3v/veilox
 `
 
 // Run runs the CLI and returns the exit code.
@@ -40,6 +42,8 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	var err error
 	switch args[0] {
+	case "setup":
+		err = runSetup(args[1:], stdout, stderr)
 	case "serve":
 		err = runServe(args[1:], stdout, stderr)
 	case "report":

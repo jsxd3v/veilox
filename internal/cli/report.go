@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jsxd3v/veilox/internal/config"
 	"github.com/jsxd3v/veilox/internal/store"
 )
 
@@ -32,17 +30,14 @@ func runReport(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	loc := time.UTC
-	path := *dbPath
-	cfg, err := config.Load(*cfgPath)
-	switch {
-	case err == nil:
-		loc = cfg.Location
-		if path == "" {
-			path = cfg.Resolve(cfg.Storage.Path)
-		}
-	case path == "" || !errors.Is(err, os.ErrNotExist):
+	cfg, _, err := loadConfig(fs, *cfgPath)
+	if err != nil {
 		return err
+	}
+	loc := cfg.Location
+	path := *dbPath
+	if path == "" {
+		path = cfg.Resolve(cfg.Storage.Path)
 	}
 	if _, err := os.Stat(path); err != nil {
 		return fmt.Errorf("no database at %s yet (it is created by `veilox serve`)", path)

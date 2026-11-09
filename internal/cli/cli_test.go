@@ -128,7 +128,7 @@ func TestCheck(t *testing.T) {
 		t.Fatal(code, errs)
 	}
 	empty := writeFile(t, dir, "empty.yaml", "pricing: { file: none.yaml }\n")
-	if code, out, _ := run(t, "", "check", "--config", empty); code != 0 || !strings.Contains(out, "no apps") || !strings.Contains(out, "no prices") {
+	if code, out, _ := run(t, "", "check", "--config", empty); code != 0 || !strings.Contains(out, "no app key") || !strings.Contains(out, "no prices") {
 		t.Fatal(out)
 	}
 }
@@ -253,7 +253,7 @@ TOTAL                                     3       1  1,200,805     300,000  $4.9
 	if code != 0 || out != "app,requests,errors,input_tokens,output_tokens,cost_usd,unpriced_requests,masked\nsupport-bot,1,0,1200000,300000,4.980000,0,6412\ncrm,3,1,805,0,2.001000,1,0\n" {
 		t.Fatal(out)
 	}
-	code, out, _ = run(t, "", "report", "--db", filepath.Join(dir, "data", "veilox.db"), "--config", "nope.yaml", "--since", "2026-11-01", "--until", "2026-11-01", "--app", "crm", "--by", "provider", "--format", "json")
+	code, out, _ = run(t, "", "report", "--db", filepath.Join(dir, "data", "veilox.db"), "--since", "2026-11-01", "--until", "2026-11-01", "--app", "crm", "--by", "provider", "--format", "json")
 	var rows []map[string]any
 	if code != 0 || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0]["provider"] != "openai" || rows[0]["cost_usd"] != 2.0 {
 		t.Fatal(out)
@@ -349,7 +349,7 @@ func TestServe(t *testing.T) {
 func TestServeErrors(t *testing.T) {
 	dir := t.TempDir()
 	noApps := writeFile(t, dir, "a.yaml", "")
-	if code, _, errs := run(t, "", "serve", "--config", noApps); code != 1 || !strings.Contains(errs, "no apps") {
+	if code, _, errs := run(t, "", "serve", "--config", noApps); code != 1 || !strings.Contains(errs, "no app key") {
 		t.Fatal(errs)
 	}
 	if code, _, _ := run(t, "", "serve", "--config", filepath.Join(dir, "missing.yaml")); code != 1 {

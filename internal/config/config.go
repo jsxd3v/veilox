@@ -4,6 +4,7 @@ package config
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -30,6 +31,8 @@ type Config struct {
 
 	// Dir is the folder of the config file; relative paths are resolved against it.
 	Dir string `yaml:"-"`
+	// File is the config file that was read, or "" when veilox runs without one.
+	File string `yaml:"-"`
 	// Names holds names from masking.names and masking.names_file together.
 	Names []string `yaml:"-"`
 	// Location is server.timezone, loaded.
@@ -127,13 +130,26 @@ func Defaults() *Config {
 	}
 }
 
+// EnvApp is the app name for VEILOX_KEY when VEILOX_APP is not set.
+const EnvApp = "default"
+
 // Load reads, fills defaults, applies environment overrides and validates a config file.
-func Load(path string) (*Config, error) {
+func Load(path string) (*Config, error) { return loadFile(path, false) }
+
+// LoadOrDefault is Load, except that a missing file is fine: veilox then runs on the defaults and the
+// environment alone (VEILOX_KEY, OPENAI_API_KEY, ...).
+func LoadOrDefault(path string) (*Config, error) { return loadFile(path, true) }
+
+func loadFile(path string, optional bool) (*Config, error) {
 	data, err := os.ReadFile(path) // #nosec G304 -- the operator chooses the config path
-	if err != nil {
+	if missingOK := optional && errors.Is(err, os.ErrNotExist); err != nil && !missingOK {
 		return nil, err
 	}
 	cfg := Defaults()
+	cfg.File = path
+	if data == nil {
+		cfg.File = ""
+	}
 	providers := cfg.Providers
 	cfg.Providers = nil
 	dec := yaml.NewDecoder(bytes.NewReader(data))
@@ -168,6 +184,18 @@ func Load(path string) (*Config, error) {
 	}
 	if v := os.Getenv("VEILOX_DB"); v != "" {
 		cfg.Storage.Path = v
+	}
+	// One app straight from the environment: the simplest setup, no YAML needed.
+	if key := os.Getenv("VEILOX_KEY"); key != "" {
+		if len(key) < 20 {
+			return nil, fmt.Errorf("VEILOX_KEY is too short; create one with `veilox setup`")
+		}
+		name := os.Getenv("VEILOX_APP")
+		if name == "" {
+			name = EnvApp
+		}
+		sum := sha256.Sum256([]byte(key))
+		cfg.Apps = append(cfg.Apps, App{Name: name, KeySHA256: hex.EncodeToString(sum[:])})
 	}
 	if err := cfg.validate(); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)

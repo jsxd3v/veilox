@@ -6,4 +6,6 @@
 *.db-wal
 coverage.out
 /veilox
+/veilox.yaml
+/prices.yaml
 .env

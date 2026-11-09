@@ -24,6 +24,8 @@ First release.
   token prices. Daily budgets per app with a `429`, `Retry-After` and an error in the SDK's format.
 - `masking.unsupported_content` (forward or reject images and files), `masking.system_hint`,
   `pricing.unknown_model`.
+- `veilox setup [app]`: creates `.env` with a new app key (`VEILOX_KEY`) and an example `prices.yaml`.
+  veilox reads `.env` itself, and `veilox.yaml` is optional, so one app needs no YAML at all.
 - Commands: `serve` (graceful shutdown, reload on `SIGHUP`, daily retention cleanup), `report` (table, CSV,
   JSON), `scan` (dry run on text or a request body), `keygen`, `check`, `version`.
 - One JSON log line per request with counts per type, never values.

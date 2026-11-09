@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jsxd3v/veilox/internal/config"
 	"github.com/jsxd3v/veilox/internal/proxy"
 )
 
@@ -19,7 +18,7 @@ func runCheck(args []string, stdout, stderr io.Writer) error {
 	if _, err := parse(fs, args); err != nil {
 		return err
 	}
-	cfg, err := config.Load(*cfgPath)
+	cfg, envWarnings, err := loadConfig(fs, *cfgPath)
 	if err != nil {
 		return err
 	}
@@ -27,7 +26,11 @@ func runCheck(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(stdout, "%s is valid.\n\n", *cfgPath)
+	if cfg.File != "" {
+		fmt.Fprintf(stdout, "%s is valid.\n\n", cfg.File)
+	} else {
+		fmt.Fprint(stdout, "No veilox.yaml: using the defaults and .env. The settings are valid.\n\n")
+	}
 
 	apps := make([]string, 0, len(cfg.Apps))
 	for _, a := range cfg.Apps {
@@ -50,9 +53,9 @@ func runCheck(args []string, stdout, stderr io.Writer) error {
 	}
 	fmt.Fprintf(stdout, "  database:   %s (%s)\n", cfg.Storage.Path, keep)
 
-	var warnings []string
+	warnings := envWarnings
 	if len(cfg.Apps) == 0 {
-		warnings = append(warnings, "no apps: `veilox serve` won't start. Create one with `veilox keygen <app-name>`")
+		warnings = append(warnings, "no app key: `veilox serve` won't start. Run `veilox setup`")
 	}
 	if rt.Prices.Len() == 0 {
 		warnings = append(warnings, "no prices loaded: costs will show as unknown and budgets can't be enforced")
