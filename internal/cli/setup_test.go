@@ -23,7 +23,7 @@ func TestExamplePricesMatchesFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(b) != examplePrices {
+	if strings.ReplaceAll(string(b), "\r\n", "\n") != examplePrices { // Git on Windows may check out CRLF
 		t.Fatal("examplePrices in setup.go differs from examples/prices.yaml: copy the file into the constant")
 	}
 }
